@@ -1,0 +1,203 @@
+<!DOCTYPE html
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+	<title>Insert Image</title>
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<script type="text/javascript" src="/typo3/contrib/prototype/prototype.js"></script>
+	<script type="text/javascript" src="/typo3/js/common.js"></script>
+	<script type="text/javascript">
+		/*<![CDATA[*/
+		<!--
+		var editor = window.opener.HTMLArea;
+		var dialog = editor.Dialog["insertMyVideo"];
+		var plugin = dialog.plugin;
+		var video = plugin.video;
+		var maxWidth = 490;
+		var proportion = 1;
+		
+		function Init() {
+			dialog.initialize(false, true);
+			if (dialog.plugin.removeItems) {
+				var items = dialog.plugin.removeItems;
+				for (var i = 0, length = items.length; i < length; ++i) {
+					if (document.getElementById(items[i])) document.getElementById(items[i]).style.display = "none";
+				}
+			}
+			var param = dialog.arguments;
+			if (video) {
+				document.getElementById("f_url").value = video.getAttribute("ref");
+				var counter = 0;
+				var opts = document.getElementById("type").options;
+				for (var option in opts) {
+					if(opts[option].value == video.getAttribute("type")) {
+						document.getElementById("type").selectedIndex = counter;
+						break;
+					}
+					counter++;
+				}
+			}
+			dialog.resize();
+			document.getElementById("f_url").focus();
+			disableOk();
+			return false;
+		};
+
+		function disableOk() {
+			document.getElementById("buttonOk").disabled = true;
+		}
+		
+		function onOK() {
+			var param = {};
+			index = document.getElementById("type").selectedIndex
+			param["f_type"] = document.getElementById("type").options[index].value;
+			param["f_ref"] = encodeURI(document.getElementById("f_url").value);
+			param["f_thumb"] = document.getElementById("f_thumb").value;
+			param["f_width"] = document.getElementById("f_width").value;
+			param["f_height"] = document.getElementById("f_height").value;
+			dialog.performAction(param);
+			return false;
+		};
+
+		function onCancel() {
+			dialog.close();
+			return false;
+		};
+
+		function onPreview() {
+			var f_url = document.getElementById("f_url");
+			var url = f_url.value;
+			if (!url) {
+				alert("video_url_first");
+				f_url.focus();
+				return false;
+			}
+			index = document.getElementById("type").selectedIndex;
+			switch(index) {
+				case 0:
+					id = gup('v', url);
+					mod_url = 'http://www.youtube.com/embed/' + id;
+					new Ajax.Request('/index.php?eID=rte_myvideo&type=youtube&id='+id, {
+						method: 'get',
+						onComplete: function(xhr, json) {
+							if(json != "" && json != undefined) {
+								document.getElementById("f_thumb").value = json['entry']['media$group']['media$thumbnail'][0]['url'];
+								// Dimensioni fisse per il player di Youtube
+								document.getElementById("f_width").value = "425";
+								document.getElementById("f_height").value = "349";
+								document.getElementById("ipreview").src = mod_url;
+								document.getElementById("buttonOk").disabled = false;
+							} else {
+								alert("Errore! Impossibile caricare il video.");
+							}
+						}.bind(this),
+						onT3Error: function(xhr, json) {
+							alert("An error occurred");
+						}.bind(this)
+					});
+				break;
+				
+				case 1:
+					id = vimeo_id(url);
+					new Ajax.Request('/index.php?eID=rte_myvideo&type=vimeo&id='+id, {
+						method: 'get',
+						onComplete: function(xhr, json) {
+							if(json != "" && json != undefined) {
+								document.getElementById("f_thumb").value = json[0]['thumbnail_medium'];
+								document.getElementById("f_width").value = json[0]['width'];
+								document.getElementById("f_width").value = json[0]['height'];
+								mod_url = 'http://player.vimeo.com/video/' + id;
+								proportion = json[0]['width'] / json[0]['height'];
+								if( json[0]['width'] > maxWidth ) {
+									document.getElementById("f_width").value = maxWidth;
+									document.getElementById("f_height").value = parseInt(maxWidth/proportion);
+								} else {
+									document.getElementById("f_width").value = json[0]['width'];
+									document.getElementById("f_height").value = json[0]['height'];
+								}
+								document.getElementById("ipreview").src = mod_url;
+								document.getElementById("buttonOk").disabled = false;
+							} else {
+								alert("Errore! Impossibile caricare il video.");
+							}
+						}.bind(this),
+						onT3Error: function(xhr, json) {
+							alert("An error occurred");
+						}.bind(this)
+					});
+				break;
+				
+				case 2:
+					document.getElementById("f_thumb").value = '/skin/images/video.png';
+					document.getElementById("f_width").value = '400';
+					document.getElementById("f_width").value = '400';
+					document.getElementById("buttonOk").disabled = false;
+				break;
+			}
+			return false;
+		};
+		
+		function vimeo_id(url) {
+			var regex = /http:\/\/.*vimeo\.com\/(\d+).*/;
+			var results = regex.exec(url);
+			if ( results == null ) {
+				return "";
+			} else {
+				return results[1];
+			}
+		}
+		
+		function gup( name, url ) {
+			name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+			var regexS = "[\\?&]"+name+"=([^&#]*)";
+			var regex = new RegExp( regexS );
+			var results = regex.exec( url );
+			if( results == null ) {
+				return "";
+			 } else {
+				return results[1];
+			}
+		}
+		// -->
+		/*]]>*/
+	</script>
+</head>
+<body class="popupwin htmlarea-default-image" onload="Init();">
+<div id="content">
+<div class="title">Insert Video</div>
+<form action="" method="get">
+	<div>
+		<label for="type" class="field">Video Type:</label>
+		<select name="type" id="type" onchange="disableOk()">
+			<option value="youtube">Youtube</option>
+			<option value="vimeo">Vimeo</option>
+			<!--<option value="jwplayer">File URL</option>-->
+		</select>
+	</div>
+	<div class="space"></div>
+	<div id="video">
+		<label for="f_url" class="field">Video URL:</label>
+		<input type="text" id="f_url" name="url" size="45" title="Enter the Video URL here" onchange="disableOk()" />
+	</div>
+	<div class="space"></div>
+	<button class="preview" name="preview" onclick="return onPreview();" title="Preview the video in a new window">Preview</button>
+	<fieldset>
+		<legend>Video Preview</legend>
+			<div class="imagepreview">
+				<iframe name="ipreview" id="ipreview" frameborder="0" src=""></iframe>
+			</div>
+	</fieldset>
+	<div class="buttons">
+		<input type="button" id="buttonOk" name="ok" onclick="return onOK();" value="OK" />
+		<input type="button" name="cancel" onclick="return onCancel();" value="Cancel" />
+	</div>
+	<div class="space"></div>
+	<input type="hidden" id="f_thumb" name="thumb" value="" />
+	<input type="hidden" id="f_width" name="f_width" value="" />
+	<input type="hidden" id="f_height" name="f_height" value="" />
+</form>
+</div>
+</body>
+</html> 
